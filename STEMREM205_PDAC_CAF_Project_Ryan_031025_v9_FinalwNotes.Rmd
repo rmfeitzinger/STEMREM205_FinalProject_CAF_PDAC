@@ -1,0 +1,661 @@
+---
+title: "STEMREM205_PDAC_CAF_Project_Ryan_022624_v1"
+output: html_document
+date: "2025-02-26"
+---
+
+```{r}
+library(dplyr)
+library(Seurat)
+library(ggplot2)
+```
+
+```{r}
+#Hannah's path so that I don't have to set it up everytime -- will delete later
+path1 <- "/Users/hcessna/STEMREM/Project"
+
+```
+
+```{r}
+# # Load each dataset - 
+
+#setwd("~/Documents/STEMREM205/...") #insert appropriate directory
+#Hannah's file path for ease of copy-pasting between versions: /Users/hcessna/STEMREM/Project/ 
+#Ryan's file path: ~/Documents/STEMREM205/CAF_Project/data/
+
+# read in 10X files for each patient/tumor scRNAseq assay as individual files
+#g1_pdac.data <- Read10X(data.dir = "/documents/whatever the file path is")
+g1_pdac.data.1 <- Read10X(data.dir = "~/Documents/STEMREM205/CAF_Project/data/12_11_8")
+g1_pdac.data.2 <- Read10X(data.dir = "~/Documents/STEMREM205/CAF_Project/data/12_11_9")
+g1_pdac.data.3 <- Read10X(data.dir = "~/Documents/STEMREM205/CAF_Project/data/12_12_10")
+g1_pdac.data.4 <- Read10X(data.dir = "~/Documents/STEMREM205/CAF_Project/data/12_12_11")
+g2_pdac.data.1 <- Read10X(data.dir = "~/Documents/STEMREM205/CAF_Project/data/12_10_8")
+g2_pdac.data.2 <- Read10X(data.dir = "~/Documents/STEMREM205/CAF_Project/data/12_10_9")
+g2_pdac.data.3 <- Read10X(data.dir = "~/Documents/STEMREM205/CAF_Project/data/12_7_8")
+g2_pdac.data.4 <- Read10X(data.dir = "~/Documents/STEMREM205/CAF_Project/data/12_7_9")
+g2_pdac.data.5 <- Read10X(data.dir = "~/Documents/STEMREM205/CAF_Project/data/12_7_10")
+```
+```{r}
+#Initialize the Seurat object for each 10X data object
+g1_pdac_1 <- CreateSeuratObject(counts = g1_pdac.data.1, project = "g1", min.cells = 3, min.features = 200)
+g1_pdac_2 <- CreateSeuratObject(counts = g1_pdac.data.2, project = "g1", min.cells = 3, min.features = 200)
+g1_pdac_3 <- CreateSeuratObject(counts = g1_pdac.data.3, project = "g2", min.cells = 3, min.features = 200)
+g1_pdac_4 <- CreateSeuratObject(counts = g1_pdac.data.4, project = "g2", min.cells = 3, min.features = 200)
+
+g2_pdac_1 <- CreateSeuratObject(counts = g2_pdac.data.1, project = "g3", min.cells = 3, min.features = 200)
+g2_pdac_2 <- CreateSeuratObject(counts = g2_pdac.data.2, project = "g3", min.cells = 3, min.features = 200)
+g2_pdac_3 <- CreateSeuratObject(counts = g2_pdac.data.3, project = "g4", min.cells = 3, min.features = 200)
+g2_pdac_4 <- CreateSeuratObject(counts = g2_pdac.data.4, project = "g4", min.cells = 3, min.features = 200)
+g2_pdac_5 <- CreateSeuratObject(counts = g2_pdac.data.5, project = "g4", min.cells = 3, min.features = 200)
+```
+
+```{r}
+#run through default Seurat analysis pipeline for each dataset to prepare for later integration
+#QC by subsetting out those with more than 200 gene reads and less than 10% mitochondrial reads
+#g1_pdac_1
+g1_pdac_1$percent.mt <- PercentageFeatureSet(g1_pdac_1, pattern = "^MT-")
+g1_pdac_1 <- subset(g1_pdac_1, subset = nFeature_RNA > 200 & percent.mt < 10)
+
+#normalize, find variable features, scale data using Seurat default parameters
+g1_pdac_1 <- NormalizeData(g1_pdac_1)
+g1_pdac_1 <- FindVariableFeatures(g1_pdac_1)
+g1_pdac_1 <- ScaleData(g1_pdac_1)
+
+#run PCA to determine #PCs for downstream analysis
+g1_pdac_1 <- RunPCA(g1_pdac_1)
+
+#use 15 PCs for all further analysis based on elbow plot
+
+#run UMAP, make neighbor graph and find clusters
+g1_pdac_1 <- RunUMAP(g1_pdac_1, dims = 1:15)
+g1_pdac_1 <- FindNeighbors(g1_pdac_1, dims = 1:15)
+g1_pdac_1 <- FindClusters(g1_pdac_1, resolution = 0.2)
+```
+```{r}
+#g1_pdac_2
+g1_pdac_2$percent.mt <- PercentageFeatureSet(g1_pdac_2, pattern = "^MT-")
+g1_pdac_2 <- subset(g1_pdac_2, subset = nFeature_RNA > 200 & percent.mt < 10)
+g1_pdac_2 <- NormalizeData(g1_pdac_2)
+g1_pdac_2 <- FindVariableFeatures(g1_pdac_2)
+g1_pdac_2 <- ScaleData(g1_pdac_2)
+g1_pdac_2 <- RunPCA(g1_pdac_2)
+g1_pdac_2 <- RunUMAP(g1_pdac_2, dims = 1:15)
+g1_pdac_2 <- FindNeighbors(g1_pdac_2, dims = 1:15)
+g1_pdac_2 <- FindClusters(g1_pdac_2, resolution = 0.2)
+```
+
+```{r}
+#g1_pdac_3
+g1_pdac_3$percent.mt <- PercentageFeatureSet(g1_pdac_3, pattern = "^MT-")
+g1_pdac_3 <- subset(g1_pdac_3, subset = nFeature_RNA > 200 & percent.mt < 10)
+g1_pdac_3 <- NormalizeData(g1_pdac_3)
+g1_pdac_3 <- FindVariableFeatures(g1_pdac_3)
+g1_pdac_3 <- ScaleData(g1_pdac_3)
+g1_pdac_3 <- RunPCA(g1_pdac_3)
+g1_pdac_3 <- RunUMAP(g1_pdac_3, dims = 1:15)
+g1_pdac_3 <- FindNeighbors(g1_pdac_3, dims = 1:15)
+g1_pdac_3 <- FindClusters(g1_pdac_3, resolution = 0.2)
+```
+
+```{r}
+#g1_pdac_4
+g1_pdac_4$percent.mt <- PercentageFeatureSet(g1_pdac_4, pattern = "^MT-")
+g1_pdac_4 <- subset(g1_pdac_4, subset = nFeature_RNA > 200 & percent.mt < 10)
+g1_pdac_4 <- NormalizeData(g1_pdac_4)
+g1_pdac_4 <- FindVariableFeatures(g1_pdac_4)
+g1_pdac_4 <- ScaleData(g1_pdac_4)
+g1_pdac_4 <- RunPCA(g1_pdac_4)
+g1_pdac_4 <- RunUMAP(g1_pdac_4, dims = 1:15)
+g1_pdac_4 <- FindNeighbors(g1_pdac_4, dims = 1:15)
+g1_pdac_4 <- FindClusters(g1_pdac_4, resolution = 0.2)
+```
+
+```{r}
+#g2_pdac_1
+g2_pdac_1$percent.mt <- PercentageFeatureSet(g2_pdac_1, pattern = "^MT-")
+g2_pdac_1 <- subset(g2_pdac_1, subset = nFeature_RNA > 200 & percent.mt < 10)
+g2_pdac_1 <- NormalizeData(g2_pdac_1)
+g2_pdac_1 <- FindVariableFeatures(g2_pdac_1)
+g2_pdac_1 <- ScaleData(g2_pdac_1)
+g2_pdac_1 <- RunPCA(g2_pdac_1)
+g2_pdac_1 <- RunUMAP(g2_pdac_1, dims = 1:15)
+g2_pdac_1 <- FindNeighbors(g2_pdac_1, dims = 1:15)
+g2_pdac_1 <- FindClusters(g2_pdac_1, resolution = 0.2)
+```
+
+```{r}
+#g2_pdac_2
+g2_pdac_2$percent.mt <- PercentageFeatureSet(g2_pdac_2, pattern = "^MT-")
+g2_pdac_2 <- subset(g2_pdac_2, subset = nFeature_RNA > 200 & percent.mt < 10)
+g2_pdac_2 <- NormalizeData(g2_pdac_2)
+g2_pdac_2 <- FindVariableFeatures(g2_pdac_2)
+g2_pdac_2 <- ScaleData(g2_pdac_2)
+g2_pdac_2 <- RunPCA(g2_pdac_2)
+g2_pdac_2 <- RunUMAP(g2_pdac_2, dims = 1:15)
+g2_pdac_2 <- FindNeighbors(g2_pdac_2, dims = 1:15)
+g2_pdac_2 <- FindClusters(g2_pdac_2, resolution = 0.2)
+```
+
+```{r}
+#g2_pdac_3
+g2_pdac_3$percent.mt <- PercentageFeatureSet(g2_pdac_3, pattern = "^MT-")
+g2_pdac_3 <- subset(g2_pdac_3, subset = nFeature_RNA > 200 & percent.mt < 10)
+g2_pdac_3 <- NormalizeData(g2_pdac_3)
+g2_pdac_3 <- FindVariableFeatures(g2_pdac_3)
+g2_pdac_3 <- ScaleData(g2_pdac_3)
+g2_pdac_3 <- RunPCA(g2_pdac_3)
+g2_pdac_3 <- RunUMAP(g2_pdac_3, dims = 1:15)
+g2_pdac_3 <- FindNeighbors(g2_pdac_3, dims = 1:15)
+g2_pdac_3 <- FindClusters(g2_pdac_3, resolution = 0.2)
+```
+
+```{r}
+#g2_pdac_4
+g2_pdac_4$percent.mt <- PercentageFeatureSet(g2_pdac_4, pattern = "^MT-")
+g2_pdac_4 <- subset(g2_pdac_4, subset = nFeature_RNA > 200 & percent.mt < 10)
+g2_pdac_4 <- NormalizeData(g2_pdac_4)
+g2_pdac_4 <- FindVariableFeatures(g2_pdac_4)
+g2_pdac_4 <- ScaleData(g2_pdac_4)
+g2_pdac_4 <- RunPCA(g2_pdac_4)
+g2_pdac_4 <- RunUMAP(g2_pdac_4, dims = 1:15)
+g2_pdac_4 <- FindNeighbors(g2_pdac_4, dims = 1:15)
+g2_pdac_4 <- FindClusters(g2_pdac_4, resolution = 0.2)
+```
+
+```{r}
+#g2_pdac_5
+g2_pdac_5$percent.mt <- PercentageFeatureSet(g2_pdac_5, pattern = "^MT-")
+g2_pdac_5 <- subset(g2_pdac_5, subset = nFeature_RNA > 200 & percent.mt < 10)
+g2_pdac_5 <- NormalizeData(g2_pdac_5)
+g2_pdac_5 <- FindVariableFeatures(g2_pdac_5)
+g2_pdac_5 <- ScaleData(g2_pdac_5)
+g2_pdac_5 <- RunPCA(g2_pdac_5)
+g2_pdac_5 <- RunUMAP(g2_pdac_5, dims = 1:15)
+g2_pdac_5 <- FindNeighbors(g2_pdac_5, dims = 1:15)
+g2_pdac_5 <- FindClusters(g2_pdac_5, resolution = 0.2)
+```
+```{r}
+#create UMAPs for two samples to confirm that analysis pipeline worked
+DimPlot(g1_pdac_1, reduction = "umap", label = TRUE, repel = TRUE)
+DimPlot(g1_pdac_2, reduction = "umap", label = TRUE, repel = TRUE)
+```
+
+```{r}
+# Downsample all datasets to reduce comp time for integration
+set.seed(0)
+g1_pdac_1 <- g1_pdac_1[, sample(colnames(g1_pdac_1), size=2000, replace=F)]
+set.seed(0)
+g1_pdac_2 <- g1_pdac_2[, sample(colnames(g1_pdac_2), size=2000, replace=F)]
+set.seed(0)
+g1_pdac_3 <- g1_pdac_3[, sample(colnames(g1_pdac_3), size=2000, replace=F)]
+set.seed(0)
+g1_pdac_4 <- g1_pdac_4[, sample(colnames(g1_pdac_4), size=2000, replace=F)]
+set.seed(0)
+g2_pdac_1 <- g2_pdac_1[, sample(colnames(g2_pdac_1), size=2000, replace=F)]
+set.seed(0)
+g2_pdac_2 <- g2_pdac_2[, sample(colnames(g2_pdac_2), size=2000, replace=F)]
+set.seed(0)
+g2_pdac_2 <- g2_pdac_2[, sample(colnames(g2_pdac_2), size=2000, replace=F)]
+set.seed(0)
+g2_pdac_3 <- g2_pdac_3[, sample(colnames(g2_pdac_3), size=2000, replace=F)]
+set.seed(0)
+g2_pdac_4 <- g2_pdac_4[, sample(colnames(g2_pdac_4), size=2000, replace=F)]
+set.seed(0)
+g2_pdac_5 <- g2_pdac_5[, sample(colnames(g2_pdac_5), size=2000, replace=F)]
+
+ncol(g1_pdac_1)
+ncol(g1_pdac_2)
+ncol(g1_pdac_3)
+ncol(g1_pdac_4)
+```
+
+```{r}
+#create Seurat object list of all datasets to input into integration
+objlist <- list(g1_pdac_1, g1_pdac_2, g1_pdac_3, g1_pdac_4, g2_pdac_1, g2_pdac_2, g2_pdac_3, g2_pdac_4, g2_pdac_5)
+
+#find integration features to find anchors for CCA integration of datasets
+features <- SelectIntegrationFeatures(object.list = objlist)
+anchors <- FindIntegrationAnchors(object.list = objlist, anchor.features = features)
+anchors
+```
+
+```{r}
+# Integrate data into single Seurat object using anchors found in previous chunk
+pdac_int <- IntegrateData(anchorset = anchors)
+DefaultAssay(pdac_int) <- "integrated"
+```
+
+
+```{r}
+#Save/Load integrate data as .rds file
+#saveRDS(pdac_int, file = "~/Documents/STEMREM205/CAF_Project/pdac_int.rds")
+pdac_int <- readRDS(file = "~/Documents/STEMREM205/CAF_Project/pdac_int.rds")
+```
+
+```{r}
+#label the grade in each sample (we can change to high vs low if we want)
+pdac_int@meta.data$grade <- pdac_int@meta.data$orig.ident
+
+```
+
+```{r}
+# Run the standard Seurat workflow to visualize
+pdac_int <- ScaleData(pdac_int)
+pdac_int <- RunPCA(pdac_int, npcs = 50)
+pdac_int <- RunUMAP(pdac_int, dims = 1:20)
+pdac_int <- FindNeighbors(pdac_int, dims = 1:20)
+pdac_int <- FindClusters(pdac_int, resolution = 0.2)
+```
+
+
+```{r}
+#visualize UMAP
+DimPlot(pdac_int, reduction = "umap", label = TRUE, repel = TRUE)
+
+#visualize UMAP by grade to see if clusters separate by grade to assess batch effects (fairly even distribution of grade throughout all clusters so don't really need to worry about it)
+DimPlot(pdac_int, reduction = "umap", group.by = "grade") 
+```
+
+```{r}
+#find all markers to see cluster markers that can be use to annotate clusters by cell type
+all_markers <- FindAllMarkers(pdac_int)
+
+#filter markers to only look for markers with a positive log2FC vs. other clusters 
+pos_markers <- all_markers %>%
+    group_by(cluster) %>%
+    dplyr::filter(avg_log2FC > 1) %>% arrange(cluster, desc(avg_log2FC))
+#view both all markers and positive markers to look for canonical cell type markers
+pos_markers
+all_markers
+
+#can also break up markers by cluster (only positive markers), using a roc test to see their respective power as marker genes for the cell type represented by each cluster
+cluster0_markers <- FindMarkers(pdac_int, ident.1 = 0, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster0_markers
+
+cluster1_markers <- FindMarkers(pdac_int, ident.1 = 1, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster1_markers
+
+cluster2_markers <- FindMarkers(pdac_int, ident.1 = 2, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster2_markers
+
+cluster3_markers <- FindMarkers(pdac_int, ident.1 = 3, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster3_markers
+
+cluster4_markers <- FindMarkers(pdac_int, ident.1 = 4, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster4_markers
+
+cluster5_markers <- FindMarkers(pdac_int, ident.1 = 5, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster5_markers
+
+cluster6_markers <- FindMarkers(pdac_int, ident.1 = 6, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster6_markers
+
+cluster7_markers <- FindMarkers(pdac_int, ident.1 = 7, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster7_markers
+
+cluster8_markers <- FindMarkers(pdac_int, ident.1 = 8, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster8_markers
+
+cluster9_markers <- FindMarkers(pdac_int, ident.1 = 9, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster9_markers
+
+cluster10_markers <- FindMarkers(pdac_int, ident.1 = 10, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster10_markers
+
+cluster11_markers <- FindMarkers(pdac_int, ident.1 = 11, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster11_markers
+
+cluster12_markers <- FindMarkers(pdac_int, ident.1 = 12, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster12_markers
+
+cluster13_markers <- FindMarkers(pdac_int, ident.1 = 13, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+cluster13_markers
+
+#cluster 4 and cluster 6 look similar, specifically look into markers that differentiate these two 
+cluster4v6_markers <- FindMarkers(pdac_int, ident.1 = 4, ident.2 = 6) %>% arrange(avg_log2FC)
+cluster4v6_markers
+```
+
+```{r}
+#if we want to do a manual spot check/assignment: from a quick google search, here are some commonly used CAF markers, may have to adjust the names based on how they are named in the dataset
+#FAP - fibroblast activating protein
+#aSMA - alpha-smooth muscle actin (or ACTA2)
+#PDGFRa/b - platelet-derived growth factor receptors
+#VIM - vimentin
+#FSP1 - fibroblast-specific protein 1 (or S100A4)
+#TAGLN - transgelin
+#POSTN - periostin
+#PDPN - podoplanin
+
+#find fibroblast clusters, potential CAF clusters
+genes_to_plot = c("FAP","ACTA2","PDGFRA", "PDGFRB","COL1A1", "S100A4", "TAGLN","POSTN","PDPN")
+FeaturePlot(pdac_int, reduction = "umap", features = genes_to_plot)
+FeaturePlot(pdac_int, reduction = "umap", features = "FAP")
+FeaturePlot(pdac_int, reduction = "umap", features = "PDPN")
+FeaturePlot(pdac_int, reduction = "umap", features = "COL1A1")
+#FeaturePlot(pdac_int, reduction = "umap", features = c("CPA1","AMY2A") - markers for acinar cells 
+#p <- DotPlot(pdac_int, features = genes_to_plot)
+#p + theme(axis.text.x = element_text(angle = 90))
+
+#FeaturePlot(pdac_int, reduction = "umap", features = c("FAP","PDPN","PDGFRA", "COL15A1"))
+png(filename = "~/Documents/STEMREM205/CAF_Project/images/fib_features.png", width = 1500, height = 1000, units = "px")
+FeaturePlot(pdac_int, reduction = "umap", features = genes_to_plot)
+```
+#If we find something interesting can use the following to manually assign cluster ids
+```{r}
+#based on cell type markers found in previous chunks, manually assign cell types to clusters as follows
+# cluster 0 --> CD8 T/NK
+# cluster 1 --> Tregs
+# cluster 2 --> B/plasma
+# cluster 3 --> Myeloid
+# cluster 4 --> Tumor
+# cluster 5 --> Endothelial
+# cluster 6 --> Ductal
+# cluster 7 --> Fibroblasts
+# cluster 8 --> also fibroblasts
+# cluster 9 --> Stellate
+# cluster 10 --> Mast
+# cluster 11 --> Schwann
+# cluster 12 --> Proliferating Epithelial
+# cluster 13 --> Endocrine
+new.cluster.ids <- c("CD8 T/NK","Tregs","B/plasma","Myeloid","Tumor","Endothelial","Ductal","Fibroblasts","Fibroblasts2","Stellate","Mast","Schwann","Proliferating Epithelial","Endocrine")
+
+#assign cell types to cluster ids within Seurat object
+names(new.cluster.ids) <- levels(pdac_int)
+pdac_int <- RenameIdents(pdac_int, new.cluster.ids)
+
+#Add new cluster names to metadata
+pdac_int@meta.data$cluster_ident <- 'markers'
+for (i in sort(unique(pdac_int@meta.data$integrated_snn_res.0.2))){
+   pdac_int@meta.data$cluster_ident[pdac_int@meta.data$integrated_snn_res.0.2==i] <- new.cluster.ids[as.double(i)+1]
+}
+
+#save UMAP with cell type annotations to .png file
+png(filename = "~/Documents/STEMREM205/CAF_Project/images/full_UMAP.png", width = 1500, height = 1000, units = "px")
+DimPlot(pdac_int, reduction = "umap", group.by="cluster_ident", label=T, repel=T, label.size = 8)
+
+#create heatmap to visually confirm correct clustering based on top 10 differentially expressed genes for each cell type/cluster
+all_markers %>%
+    group_by(cluster) %>%
+    dplyr::filter(avg_log2FC > 1) %>%
+    slice_head(n = 10) %>%
+    ungroup() -> top10
+png(filename = "~/Documents/STEMREM205/CAF_Project/images/full_heatmap.png", width = 1500, height = 1000, units = "px") #save heatmap to png
+DoHeatmap(pdac_int, features = top10$gene) + NoLegend()
+
+#subset data to only include our fibroblast clusters for further analysis
+possible_fib <- subset(pdac_int, idents = c("Fibroblasts","Fibroblasts2")) 
+
+DoHeatmap(possible_fib, features = fib_top10$gene) + NoLegend()
+#genes_to_plot = c("FAP","ACTA2","PDGFRA", "PDGFRB","COL1A1", "S100A4", "TAGLN","POSTN","PDPN")
+VlnPlot(possible_fib, features = c("FAP","PDGFRA","PDPN"))
+VlnPlot(possible_fib, features = c("PDGFRB","COL1A1", "S100A4"))
+VlnPlot(possible_fib, features = c("TAGLN","POSTN","ACTA2"))
+
+png(filename = "~/Documents/STEMREM205/CAF_Project/images/fib_violin_plots.png", width = 1750, height = 1000, units = "px")
+VlnPlot(possible_fib, features = c("FAP","PDGFRA","PDPN"))
+```
+
+```{r}
+#subset into Fibroblasts for further analysis to find CAFs within this subset
+fib <- subset(pdac_int, idents = c("Fibroblasts","Fibroblasts2"))
+
+#find variable features within CAFs
+fib <- FindVariableFeatures(fib)
+
+fib_top10 <- head(VariableFeatures(fib), 10)
+fib_top10
+
+fib_plot1 <- VariableFeaturePlot(fib)
+fib_plot2 <- LabelPoints(plot = fib_plot1, points = fib_top10, repel = TRUE)
+fib_plot2
+
+#run PCA on CAFs
+fib <- RunPCA(fib)
+ElbowPlot(fib)
+#continuing to use 15 PCs for analysis based on elbow plot
+```
+
+```{r}
+#cluster subset fibroblast dataset
+fib <- FindNeighbors(fib, dims = 1:15)
+fib <- FindClusters(fib, resolution = 0.2)
+
+#create UMAP for fibroblast data
+fib <- RunUMAP(fib, dims = 1:15)
+DimPlot(fib, reduction = "umap", label = TRUE, repel = TRUE)
+DimPlot(fib, reduction = "umap", group.by = "grade") #check for separation of/differences in fibroblast clusters by grade
+
+#create feature plots and violin plots for CAF markers to see which of the clusters in our fibroblast subset are likely CAFs
+caf_genes <- c("PDPN","PDGFRA","MFAP5","COL11A1","TNC","FAP")
+FeaturePlot(fib, reduction = "umap", features = caf_genes)
+VlnPlot(fib, features = caf_genes)
+
+#check for known CAF subtype populations within our dataset to see if they can be assigned to one of our clusters
+#myCAF --> Col15a1+
+FeaturePlot(fib, reduction = "umap", features = "COL15A1")
+VlnPlot(fib, features = "COL15A1")
+
+#iCAF --> Ly6a/c1+ cells
+FeaturePlot(fib, reduction = "umap", features = c("LY6A","LYC6C1"))
+VlnPlot(fib, features = c("LY6A","LYC6C1"))
+
+#apCAFs --> Cd74, H2-Ab1, Saa3
+FeaturePlot(fib, reduction = "umap", features = c("CD74", "H2AFB1", "SAA3"))
+VlnPlot(fib, features = c("CD74", "H2AFB1", "SAA3"))
+
+#save fibroblast UMAP to png
+png(filename = "~/Documents/STEMREM205/CAF_Project/images/fib_umap_unlabeled.png", width = 1500, height = 1000, units = "px")
+DimPlot(fib, reduction = "umap", label = TRUE, repel = TRUE, pt.size = 1, label.size = 8)
+
+#save violin plot with canonical CAF markers to png
+png(filename = "~/Documents/STEMREM205/CAF_Project/images/fib_violin1.png", width = 1750, height = 1000, units = "px")
+VlnPlot(fib, features = c("PDPN","PDGFRA","FAP"))
+
+#save violin plot with additional CAF markers to png
+png(filename = "~/Documents/STEMREM205/CAF_Project/images/fib_violin2.png", width = 1750, height = 1000, units = "px")
+VlnPlot(fib, features = c("MFAP5","COL11A1","TNC"))
+```
+
+```{r}
+#find markers that vary within fibroblast subtypes/clusters
+fib_markers <- FindAllMarkers(fib, only.pos = TRUE)
+fib_markers_ordered <- fib_markers %>%
+    group_by(cluster) %>%
+    dplyr::filter(avg_log2FC > 1) %>% arrange(cluster, desc(avg_log2FC))
+fib_markers_ordered
+
+#create heatmap characterizing different expression profiles in each CAF cluster based on top 10 differentially expressed genes
+fib_markers %>%
+    group_by(cluster) %>%
+    dplyr::filter(avg_log2FC > 1) %>%
+    slice_head(n = 10) %>%
+    ungroup() -> fib_top10
+DoHeatmap(fib, features = fib_top10$gene) + NoLegend()
+DoHeatmap(fib, features = fib_top10$gene, group.by = "grade") #create heatmap to see if general fibroblast expression profiles differ across grade
+
+#save both heatmaps to png
+png(filename = "~/Documents/STEMREM205/CAF_Project/images/fib_heatmap.png", width = 1500, height = 1000, units = "px")
+DoHeatmap(fib, features = fib_top10$gene) + NoLegend()
+
+png(filename = "~/Documents/STEMREM205/CAF_Project/images/fib_heatmap_grade.png", width = 1500, height = 1000, units = "px")
+DoHeatmap(fib, features = fib_top10$gene, group.by = "grade")
+```
+
+```{r}
+#FAP and other CAF markers expression highest in clusters 1 and 2 --> likely our CAFs
+new_fib_ids <- c("0","CAF","CAF2","3")
+
+#assign CAF id to clusters 1 and 2 within Seurat object
+names(new_fib_ids) <- levels(fib)
+fib <- RenameIdents(fib, new_fib_ids)
+```
+
+```{r}
+#further subset fibroblast data into CAFs
+caf <- subset(fib, idents = c("CAF","CAF2"))
+
+#find variable features within CAFs
+caf <- FindVariableFeatures(caf)
+
+caf_top10 <- head(VariableFeatures(caf), 10)
+caf_top10
+
+caf_plot1 <- VariableFeaturePlot(caf)
+caf_plot2 <- LabelPoints(plot = plot1, points = caf_top10, repel = TRUE)
+caf_plot2
+
+#run PCA on CAFs
+caf <- RunPCA(caf)
+ElbowPlot(caf)
+#continuing to use 15 PCs based on elbow plot
+```
+
+```{r}
+#cluster CAFs
+caf <- FindNeighbors(caf, dims = 1:15)
+caf <- FindClusters(caf, resolution = 0.2)
+
+#create UMAP for subset CAF
+caf <- RunUMAP(caf, dims = 1:15)
+DimPlot(caf, reduction = "umap", label = TRUE, repel = TRUE)
+DimPlot(caf, reduction = "umap", group.by = "grade") #see if CAFs cluster by grade 
+
+#look for CAF subtypes within CAF subset clusters
+#myCAF --> Col15a1+, ACTA2
+FeaturePlot(caf, reduction = "umap", features = c("COL15A1","ACTA2"))
+VlnPlot(caf, features = c("COL15A1","ACTA2"))
+
+#iCAF --> Ly6a/c1+ cells (could not find genes in dataset)
+#FeaturePlot(caf, reduction = "umap", features = c("LY6A","LY6C1"))
+#VlnPlot(caf, features = c("LY6A","LY6C1"))
+
+#apCAFs --> Cd74, H2-Ab1, Saa3 (could only find CD74 in dataset)
+#FeaturePlot(caf, reduction = "umap", features = c("CD74","H2-AB1","SAA3"))
+#VlnPlot(caf, features = c("CD74","H2-AB1","SAA3"))
+FeaturePlot(caf, reduction = "umap", features = c("CD74"))
+VlnPlot(caf, features = c("CD74"))
+```
+
+```{r}
+#find markers that vary within CAF subtypes/clusters
+caf_markers <- FindAllMarkers(caf, only.pos = TRUE)
+caf_markers_ordered <- caf_markers %>%
+    group_by(cluster) %>%
+    dplyr::filter(avg_log2FC > 1) %>% arrange(cluster, desc(avg_log2FC))
+caf_markers_ordered
+
+#create heatmap characterizing different expression profiles in each CAF cluster by top 10 differentially expressed genes by cluster
+caf_markers %>%
+    group_by(cluster) %>%
+    dplyr::filter(avg_log2FC > 1) %>%
+    slice_head(n = 10) %>%
+    ungroup() -> caf_top10
+DoHeatmap(caf, features = caf_top10$gene) + NoLegend()
+
+#ggplot2 pie chart
+caf_cluster_counts <- table(caf@meta.data$grade)
+caf_cluster_counts <-as.data.frame(caf_cluster_counts)
+colnames(caf_cluster_counts) <- c("Grade","Count")
+
+caf_cluster_counts$Percent <- round(((caf_cluster_counts$Count/ sum(caf_cluster_counts$Count))*100), digits = 2)
+
+ggplot(caf_cluster_counts, aes(x = "", y = Count, fill = Grade)) + 
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) + 
+  theme_void() +
+  labs(title = "Total CAFs by Grade") +
+  scale_fill_brewer(palette = "Set3") +
+  geom_text(aes(label = Percent), position = position_stack(vjust = 0.5), size = 4)
+
+#differential expression of CAFs by tumor grade
+DoHeatmap(caf, features = caf_top10$gene, group.by = "grade")
+
+#small difference in c0 v. c1 --> see if either associates more with one tumor grade
+
+#look at gene expression in CAFs across grade irrespective of cluster id --> how to do that idk
+caf_grade_markers <- FindAllMarkers(caf, group.by = "grade", only.pos = TRUE)
+top_caf_markers <- caf_grade_markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_log2FC)
+DoHeatmap(caf, features = top_caf_markers$gene, group.by = "grade")
+
+low_grade <- c("g1","g2")
+high_grade <- c("g3","g4")
+#caf_grade_markers1 <- caf_grade_markers %>% mutate(grade = ifelse(cluster %in% low_grade, "low", "high")) %>% mutate(log10_padj = log10(p_val_adj))
+```
+```{r}
+DoHeatmap(subset(caf, idents = "0"), features = caf_top10$gene, group.by = "grade")
+DoHeatmap(subset(caf, idents = "1"), features = caf_top10$gene, group.by = "grade")
+
+#ggplot2 pie chart for CAF c0 cluster by grade
+caf0 <- subset(caf, idents = "0")
+caf0_cluster_counts <- table(caf0@meta.data$grade)
+caf0_cluster_counts <-as.data.frame(caf0_cluster_counts)
+colnames(caf0_cluster_counts) <- c("Grade","Count")
+
+caf0_cluster_counts$Percent <- round(((caf0_cluster_counts$Count/ sum(caf0_cluster_counts$Count))*100), digits = 2)
+
+ggplot(caf0_cluster_counts, aes(x = "", y = Count, fill = Grade)) + 
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) + 
+  theme_void() +
+  labs(title = "c0 CAFs by Grade") +
+  scale_fill_brewer(palette = "Set3") +
+  geom_text(aes(label = Percent), position = position_stack(vjust = 0.5), size = 4)
+
+#ggplot2 pie chart for CAF c1 cluster by grade
+caf1 <- subset(caf, idents = "1")
+caf1_cluster_counts <- table(caf1@meta.data$grade)
+caf1_cluster_counts <-as.data.frame(caf1_cluster_counts)
+colnames(caf1_cluster_counts) <- c("Grade","Count")
+
+caf1_cluster_counts$Percent <- round(((caf1_cluster_counts$Count/ sum(caf1_cluster_counts$Count))*100), digits = 2)
+
+ggplot(caf1_cluster_counts, aes(x = "", y = Count, fill = Grade)) + 
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) + 
+  theme_void() +
+  labs(title = "c1 CAFs by Grade") +
+  scale_fill_brewer(palette = "Set3") +
+  geom_text(aes(label = Percent), position = position_stack(vjust = 0.5), size = 4)
+
+ggplot(caf0_cluster_counts, aes(x = Grade, y = Count, fill = Grade)) + 
+  geom_col(stat = "identity", width = 1) +
+  labs(title = "c0 CAFs by Grade") +
+  scale_fill_brewer(palette = "Set3")
+
+ggplot(caf1_cluster_counts, aes(x = Grade, y = Count, fill = Grade)) + 
+  geom_col(stat = "identity", width = 1) +
+  labs(title = "c1 CAFs by Grade") +
+  scale_fill_brewer(palette = "Set3")
+
+sum(caf0_cluster_counts$Count) + sum(caf1_cluster_counts$Count)
+```
+```{r}
+#subset into cluster 0 CAFs to see if we can subset further
+
+#find variable features within CAFs
+caf0 <- FindVariableFeatures(caf0)
+
+caf0_top10 <- head(VariableFeatures(caf0), 10)
+caf0_top10
+
+caf0_plot1 <- VariableFeaturePlot(caf0)
+caf0_plot2 <- LabelPoints(plot = plot1, points = caf0_top10, repel = TRUE)
+caf0_plot2
+
+#run PCA on CAFs
+caf0 <- RunPCA(caf0)
+ElbowPlot(caf0)
+
+#cluster
+caf0 <- FindNeighbors(caf0, dims = 1:15)
+caf0 <- FindClusters(caf0, resolution = 0.2)
+
+#UMAP
+caf0 <- RunUMAP(caf0, dims = 1:15)
+DimPlot(caf0, reduction = "umap", label = TRUE, repel = TRUE)
+DimPlot(caf0, reduction = "umap", group.by = "grade")
+
+DoHeatmap(caf0, group.by = "grade")
+#based on UMAP + heatmap it looks like we have subset as far as we can with the current data
+```
